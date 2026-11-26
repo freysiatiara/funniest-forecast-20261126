@@ -29,25 +29,29 @@ def write_and_verify(path, line):
         sys.exit("verify failed: mode %o, expected 0644" % mode)
 
 
-def resolve_output_path():
+def candidate_output_paths():
+    paths = []
     if os.environ.get("ENTRY_OUTPUT"):
-        return os.environ["ENTRY_OUTPUT"]
+        paths.append(os.environ["ENTRY_OUTPUT"])
     for var in ("OUTPUT_DIR", "MAKEFUN_OUTPUT_DIR"):
         base = os.environ.get(var)
         if base:
-            return os.path.join(base, "entry.txt")
-    return "/output/entry.txt"
+            paths.append(os.path.join(base, "entry.txt"))
+    paths.append("/output/entry.txt")
+    seen = set()
+    unique = []
+    for p in paths:
+        if p not in seen:
+            seen.add(p)
+            unique.append(p)
+    return unique
 
 
 def main():
     line = LINE
     check_line(line)
-    path = resolve_output_path()
-    candidates = [path]
-    if path != "/output/entry.txt":
-        candidates.append("/output/entry.txt")
     last_error = None
-    for candidate in candidates:
+    for candidate in candidate_output_paths():
         try:
             write_and_verify(candidate, line)
             return
